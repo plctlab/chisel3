@@ -59,4 +59,15 @@ trait MinimizerSpec extends EndToEndSMTBaseSpec {
       ),
       BitPat("b?")
     )
+
+  val multiDefaultCase = TruthTable(
+    Map(
+      BitPat("b000") -> BitPat("b0100"),
+      BitPat("b001") -> BitPat("b?111"),
+      BitPat("b010") -> BitPat("b?000"),
+      BitPat("b011") -> BitPat("b0101"),
+      BitPat("b111") -> BitPat("b1101")
+    ),
+    BitPat("b?100")
+  )
 }
