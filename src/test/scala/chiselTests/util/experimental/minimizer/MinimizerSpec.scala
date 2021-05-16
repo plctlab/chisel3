@@ -8,25 +8,25 @@ import chisel3.util.experimental.decode._
 import chisel3.util.experimental.pla
 import chiselTests.EndToEndSMTBaseSpec
 
+class DecodeTestModule(minimizer: Minimizer, table: TruthTable) extends Module {
+  val i = IO(Input(UInt(table.table.head._1.getWidth.W)))
+  val (unminimizedI, unminimizedO) = pla(table.table.toSeq)
+  unminimizedI := i
+  val minimizedO: UInt = decoder(minimizer, i, table)
+
+  chisel3.experimental.verification.assert(
+    // for each instruction, if input matches, output should match, not no matched, fallback to default
+    (table.table.map { case (key, value) => (i === key) && (minimizedO === value) } ++
+      Seq(table.table.keys.map(i =/= _).reduce(_ && _) && minimizedO === table.default)).reduce(_ || _)
+  )
+}
+
 trait MinimizerSpec extends EndToEndSMTBaseSpec {
   def minimizer: Minimizer
 
-  class DecodeTestModule(table: TruthTable) extends Module {
-    val i = IO(Input(UInt(table.table.head._1.getWidth.W)))
-    val (unminimizedI, unminimizedO) = pla(table.table.toSeq)
-    unminimizedI := i
-    val minimizedO: UInt = decoder(minimizer, i, table)
-    chisel3.experimental.verification.assert(
-      // if input is legal, minimized and unminimized output should be same.
-      (minimizedO === unminimizedO) |
-        // if input is not legal, minimized output should be captured by default.
-        (minimizedO === table.default)
-    )
-  }
-
   def minimizerTest(testcase: TruthTable, caseName: String) = {
     test(
-      () => new DecodeTestModule(table = testcase),
+      () => new DecodeTestModule(minimizer, table = testcase),
       s"${minimizer.getClass.getSimpleName}.$caseName",
       success
     )
